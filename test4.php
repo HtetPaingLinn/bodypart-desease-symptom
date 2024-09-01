@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Image Map</title>
-    <link href="../public/style.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         *{
@@ -110,37 +109,37 @@
     </div>
 
 
-    <div class="container w-1/2 p-4">
-        <label for="bodyPart" class="block text-lg font-medium text-gray-700">Clicked Area ID:</label>
-        <input type="text" id="bodyPart" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" value="" readonly>
-        
-        <form id="symptomForm" class="mt-6 space-y-4">
-            <div>
-                <label for="symptom1" class="block text-sm font-medium text-gray-700">Symptom 1:</label>
-                <select id="symptom1" name="symptom1" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                    <option value="">--Select Symptom 1--</option>
-                </select>
-            </div>
+    <div class="container mx-auto w-full md:w-1/2 p-4">
+    <label for="bodyPart" class="block text-lg font-medium text-gray-700">Clicked Area ID:</label>
+    <input type="text" id="bodyPart" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" value="general" readonly>
 
-            <div>
-                <label for="symptom2" class="block text-sm font-medium text-gray-700">Symptom 2:</label>
-                <select id="symptom2" name="symptom2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" disabled>
-                    <option value="">--Select Symptom 2--</option>
-                </select>
-            </div>
+    <form id="symptomForm" class="mt-6 space-y-4">
+        <div>
+            <label for="symptom1" class="block text-sm font-medium text-gray-700">Symptom 1:</label>
+            <select id="symptom1" name="symptom1" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                <option value="">--Select Symptom 1--</option>
+            </select>
+        </div>
 
-            <div>
-                <label for="symptom3" class="block text-sm font-medium text-gray-700">Symptom 3:</label>
-                <select id="symptom3" name="symptom3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" disabled>
-                    <option value="">--Select Symptom 3--</option>
-                </select>
-            </div>
+        <div>
+            <label for="symptom2" class="block text-sm font-medium text-gray-700">Symptom 2:</label>
+            <select id="symptom2" name="symptom2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" disabled>
+                <option value="">--Select Symptom 2--</option>
+            </select>
+        </div>
 
-            <button type="button" onclick="predictDisease()" class="px-4 py-2 bg-green-500 text-white rounded-md shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500">Predict Disease</button>
-        </form>
+        <div>
+            <label for="symptom3" class="block text-sm font-medium text-gray-700">Symptom 3:</label>
+            <select id="symptom3" name="symptom3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" disabled>
+                <option value="">--Select Symptom 3--</option>
+            </select>
+        </div>
 
-        <p id="result" class="mt-4"></p>
-    </div>
+        <button type="button" onclick="predictDisease()" class="px-4 py-2 bg-green-500 text-white rounded-md shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500">Predict Disease</button>
+    </form>
+
+    <div id="result" class="mt-6 space-y-6"></div>
+</div>
 
 <script>
 <?php
@@ -186,7 +185,6 @@ foreach ($lines as $line) {
 
 // Convert the PHP array to a JSON object and print it in JavaScript format
 echo "const diseases = " . json_encode($diseases, JSON_PRETTY_PRINT) . ";\n";
-echo "console.log(diseases);";
 ?>
 
 document.querySelectorAll('area').forEach(function(area) {
@@ -195,17 +193,28 @@ document.querySelectorAll('area').forEach(function(area) {
         const bodyPart = this.title.toLowerCase();
         document.getElementById('bodyPart').value = bodyPart;
 
-        // Populate Symptom 1 based on the selected body part
+        resetSymptomSelectors();
         populateSymptomOptions(bodyPart, 0, 'symptom1');
     });
+});
+
+// Event listener for clicking outside a body part to reset to "general"
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('area') && !event.target.closest('select')) {
+        document.getElementById('bodyPart').value = "general";
+        resetSymptomSelectors();
+        populateSymptomOptions('general', 0, 'symptom1');
+    }
 });
 
 document.getElementById('symptom1').addEventListener('change', function() {
     const bodyPart = document.getElementById('bodyPart').value.toLowerCase();
     const selectedSymptom1 = this.value;
 
-    // Populate Symptom 2 based on the first selected symptom
-    populateSymptomOptions(bodyPart, 1, 'symptom2', selectedSymptom1);
+    resetSymptomSelectors(2);
+    if (selectedSymptom1) {
+        populateSymptomOptions(bodyPart, 1, 'symptom2', selectedSymptom1);
+    }
 });
 
 document.getElementById('symptom2').addEventListener('change', function() {
@@ -213,28 +222,41 @@ document.getElementById('symptom2').addEventListener('change', function() {
     const selectedSymptom1 = document.getElementById('symptom1').value;
     const selectedSymptom2 = this.value;
 
-    // Populate Symptom 3 based on the first and second selected symptoms
-    populateSymptomOptions(bodyPart, 2, 'symptom3', selectedSymptom1, selectedSymptom2);
+    resetSymptomSelectors(3);
+    if (selectedSymptom2) {
+        populateSymptomOptions(bodyPart, 2, 'symptom3', selectedSymptom1, selectedSymptom2);
+    }
 });
+
+function resetSymptomSelectors(startIndex = 1) {
+    for (let i = startIndex; i <= 3; i++) {
+        const selectElement = document.getElementById(`symptom${i}`);
+        selectElement.innerHTML = `<option value="">--Select Symptom ${i}--</option>`;
+        selectElement.disabled = true;
+    }
+}
 
 function populateSymptomOptions(bodyPart, position, selectId, ...previousSymptoms) {
     const selectElement = document.getElementById(selectId);
     selectElement.innerHTML = `<option value="">--Select Symptom ${position + 1}--</option>`;
+    const symptomSet = new Set();
 
-    const matchingDiseases = diseases[bodyPart].filter(disease => {
-        return previousSymptoms.every((symptom, index) => disease.symptoms[index] === symptom);
+    diseases[bodyPart].forEach(disease => {
+        const symptomsMatch = previousSymptoms.every(symptom => disease.symptoms.includes(symptom));
+        if (symptomsMatch) {
+            disease.symptoms.forEach(symptom => {
+                if (!previousSymptoms.includes(symptom)) {
+                    symptomSet.add(symptom);
+                }
+            });
+        }
     });
 
-    const symptomSet = new Set();
-    matchingDiseases.forEach(disease => {
-        const symptom = disease.symptoms[position];
-        if (symptom && !symptomSet.has(symptom)) {
-            symptomSet.add(symptom);
-            const option = document.createElement('option');
-            option.value = symptom;
-            option.textContent = symptom.replace(/_/g, ' ');
-            selectElement.appendChild(option);
-        }
+    symptomSet.forEach(symptom => {
+        const option = document.createElement('option');
+        option.value = symptom;
+        option.textContent = symptom.replace(/_/g, ' ');
+        selectElement.appendChild(option);
     });
 
     selectElement.disabled = symptomSet.size === 0;
@@ -247,26 +269,49 @@ function predictDisease() {
     const selectedSymptom3 = document.getElementById('symptom3').value;
 
     const results = diseases[bodyPart].filter(disease => {
-        return (selectedSymptom1 === "" || disease.symptoms[0] === selectedSymptom1) &&
-               (selectedSymptom2 === "" || disease.symptoms[1] === selectedSymptom2) &&
-               (selectedSymptom3 === "" || disease.symptoms[2] === selectedSymptom3);
+        return (!selectedSymptom1 || disease.symptoms.includes(selectedSymptom1)) &&
+               (!selectedSymptom2 || disease.symptoms.includes(selectedSymptom2)) &&
+               (!selectedSymptom3 || disease.symptoms.includes(selectedSymptom3));
     });
 
     let output = "";
     if (results.length > 0) {
-        output = "Possible diseases: <br>";
         results.forEach(result => {
-            output += `${result.name.replace(/_/g, ' ')} with ${result.confidence}% confidence level.<br>`;
+            const confidence = result.confidence;
+            let confidenceText = "Fair";
+            let confidenceColor = "bg-yellow-400";
+            
+            if (confidence > 85) {
+                confidenceText = "High";
+                confidenceColor = "bg-red-500";
+            } else if (confidence >= 80) {
+                confidenceText = "Moderate";
+                confidenceColor = "bg-orange-500";
+            }
+
+            output += `
+            <div class="p-4 bg-white rounded-lg shadow-lg border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">${result.name.replace(/_/g, ' ')}</h3>
+                <div class="mt-2 text-sm text-gray-600">
+                    <p>Confidence Level: <span class="font-bold">${confidenceText}</span></p>
+                </div>
+                <div class="w-full bg-gray-300 rounded-full h-4 mt-2">
+                    <div class="h-4 rounded-full ${confidenceColor}" style="width: ${confidence}%;"></div>
+                </div>
+                <button class="mt-4 w-full px-4 py-2 bg-green-500 text-white rounded-md shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500">Find Doctor</button>
+            </div>
+            `;
         });
     } else {
-        output = "No matching diseases found.";
+        output = "<p class='text-red-500'>No matching diseases found.</p>";
     }
 
     document.getElementById('result').innerHTML = output;
 }
-
-
 </script>
+
+
+
 
 
 
